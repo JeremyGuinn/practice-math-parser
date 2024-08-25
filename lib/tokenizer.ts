@@ -19,7 +19,6 @@ export function tokenize(input: string): Token[] {
 
     while (currentChar !== undefined) {
         if (isWhitespace(currentChar)) {
-            // Skip whitespace characters
             currentChar = input[++position];
             continue;
         }
@@ -27,45 +26,35 @@ export function tokenize(input: string): Token[] {
         if (isDigit(currentChar)) {
             let num = '';
 
-            // Continue to read digits until we reach a non-digit character to get the left side of the possible float number
-            while (currentChar !== undefined && isDigit(currentChar)) {
+            // Read to the left of a possible decimal point
+            while (isDigit(currentChar)) {
                 num += currentChar;
-
                 currentChar = input[++position];
             }
 
-            // Check if the number is a float by checking if the next character is a dot
+            // Read the decimal point and the right side of the number
             if (currentChar === '.') {
                 num += currentChar;
-
                 currentChar = input[++position];
 
-                // Continue to read digits after the decimal point until we reach a non-digit character
-                while (currentChar !== undefined && isDigit(currentChar)) {
+                while (isDigit(currentChar)) {
                     num += currentChar;
-
                     currentChar = input[++position];
                 }
-
-                tokens.push({ type: 'NUMBER', value: num });
-            } else {
-                tokens.push({ type: 'NUMBER', value: num });
             }
 
+            tokens.push({ type: 'NUMBER', value: num });
             continue;
         }
 
         if (isOperator(currentChar)) {
             tokens.push({ type: 'OPERATOR', value: currentChar });
-
             currentChar = input[++position];
             continue;
         }
 
-        // We don't care if the parentheses are balanced at this point, that will be handled by the parser
         if (isParen(currentChar)) {
             tokens.push({ type: 'PAREN', value: currentChar });
-
             currentChar = input[++position];
             continue;
         }
