@@ -3,6 +3,7 @@ import { tokenize } from '../lib/tokenizer';
 import { parse } from '../lib/parser';
 import { evaluate } from '../lib/evaluator';
 
+// Playground file to test the tokenizer, parser, and evaluator
 
 const expressions = [
     '(1+-20+3)))'
