@@ -4,7 +4,7 @@ import { parse } from '../lib/parser';
 import { evaluate } from '../lib/evaluator';
 
 const expressions = [
-    '-3'
+    '2 + -(((3)))'
 ].forEach(expression => {
     console.log('Expression:', expression);
 

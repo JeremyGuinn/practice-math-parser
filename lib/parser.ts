@@ -1,18 +1,24 @@
 import { Token, TokenType } from "./tokenizer";
 
-export type ValueExpression = {
+export interface ValueExpression {
     type: 'VALUE';
     value: number;
 };
 
-export type OperatorExpression = {
-    type: 'OPERATOR';
+export interface BinaryOperatorExpression {
+    type: 'BINARY_OP';
     operator: string;
     left: Expression;
     right: Expression;
 };
 
-export type Expression = ValueExpression | OperatorExpression;
+export interface UnaryOperatorExpression {
+    type: 'UNARY_OP';
+    operator: string;
+    operand: Expression;
+};
+
+export type Expression = ValueExpression | BinaryOperatorExpression | UnaryOperatorExpression;
 
 /**
  * A recursive descent parser to parse the tokens into an expression tree
@@ -20,7 +26,8 @@ export type Expression = ValueExpression | OperatorExpression;
  * 
  * - expression := term { ('+' | '-') term }
  * - term := factor { ('*' | '/') factor }
- * - factor := int | float | '(' expression ')'
+ * - factor := '-' factor | number | '(' expression ')'
+ * - number := [0-9]+
  * 
  * The grammar is left-associative, meaning that the expression 2 + 3 + 4 is parsed as (2 + 3) + 4
  * 
@@ -49,7 +56,7 @@ export function parse(tokens: Token[]): Expression {
             currentToken = tokens[++position];
             const rightExpression = parseTerm();
             leftExpression = {
-                type: 'OPERATOR',
+                type: 'BINARY_OP',
                 operator: operator,
                 left: leftExpression,
                 right: rightExpression
@@ -71,7 +78,7 @@ export function parse(tokens: Token[]): Expression {
             currentToken = tokens[++position];
             const rightExpression = parseFactor();
             leftExpression = {
-                type: 'OPERATOR',
+                type: 'BINARY_OP',
                 operator: operator,
                 left: leftExpression,
                 right: rightExpression
@@ -82,6 +89,21 @@ export function parse(tokens: Token[]): Expression {
     }
 
     function parseFactor(): Expression {
+        if (
+            currentToken !== undefined &&
+            currentToken.type === 'OPERATOR' &&
+            (currentToken.value === '-')
+        ) {
+            const operator = currentToken.value;
+            currentToken = tokens[++position];
+            const operand = parseFactor();
+            return {
+                type: 'UNARY_OP',
+                operator: operator,
+                operand: operand
+            };
+        }
+
         if (currentToken !== undefined && currentToken.type === 'NUMBER') {
             const value = parseFloat(currentToken.value);
             currentToken = tokens[++position];
@@ -115,7 +137,6 @@ export function parse(tokens: Token[]): Expression {
 
     const result = parseExpression();
 
-    // Ensure that we consumed all tokens, otherwise the input is invalid
     if (currentToken !== undefined) {
         throw new Error(`Unexpected token: ${currentToken.value} at position ${position}`);
     }

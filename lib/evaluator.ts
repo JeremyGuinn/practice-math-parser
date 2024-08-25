@@ -5,7 +5,7 @@ export function evaluateExpression(expression: Expression): number {
     switch (expression.type) {
         case 'VALUE':
             return expression.value;
-        case 'OPERATOR':
+        case 'BINARY_OP':
             const left = evaluateExpression(expression.left);
             const right = evaluateExpression(expression.right);
 
@@ -18,6 +18,15 @@ export function evaluateExpression(expression: Expression): number {
                     return left * right;
                 case '/':
                     return left / right;
+                default:
+                    throw new Error('Invalid operator');
+            }
+        case 'UNARY_OP':
+            const operand = evaluateExpression(expression.operand);
+
+            switch (expression.operator) {
+                case '-':
+                    return -operand;
                 default:
                     throw new Error('Invalid operator');
             }
