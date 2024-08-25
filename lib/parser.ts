@@ -1,4 +1,5 @@
-import { Token, TokenType } from "./tokenizer";
+import { Token } from "./tokenizer";
+import { MATH_FUNCTIONS, Operator, PAREN } from "./tokens";
 
 export interface ValueExpression {
     type: 'VALUE';
@@ -47,11 +48,7 @@ export function parse(tokens: Token[]): Expression {
     function parseExpression(): Expression {
         let leftExpression = parseTerm();
 
-        while (
-            currentToken !== undefined &&
-            currentToken.type === 'OPERATOR' &&
-            (currentToken.value === '+' || currentToken.value === '-')
-        ) {
+        while (currentToken !== undefined && (currentToken.value === Operator.ADD || currentToken.value === Operator.SUBTRACT)) {
             const operator = currentToken.value;
             currentToken = tokens[++position];
             const rightExpression = parseTerm();
@@ -69,11 +66,7 @@ export function parse(tokens: Token[]): Expression {
     function parseTerm(): Expression {
         let leftExpression = parseFactor();
 
-        while (
-            currentToken !== undefined &&
-            currentToken.type === 'OPERATOR' &&
-            (currentToken.value === '*' || currentToken.value === '/')
-        ) {
+        while (currentToken !== undefined && (currentToken.value === Operator.MULTIPLY || currentToken.value === Operator.DIVIDE)) {
             const operator = currentToken.value;
             currentToken = tokens[++position];
             const rightExpression = parseFactor();
@@ -89,11 +82,7 @@ export function parse(tokens: Token[]): Expression {
     }
 
     function parseFactor(): Expression {
-        if (
-            currentToken !== undefined &&
-            currentToken.type === 'OPERATOR' &&
-            (currentToken.value === '-')
-        ) {
+        if (currentToken?.value === Operator.SUBTRACT || currentToken?.value === Operator.ADD || MATH_FUNCTIONS.includes(currentToken?.value)) {
             const operator = currentToken.value;
             currentToken = tokens[++position];
             const operand = parseFactor();
@@ -104,6 +93,28 @@ export function parse(tokens: Token[]): Expression {
             };
         }
 
+        return parseExponentiation();
+    }
+
+    function parseExponentiation(): Expression {
+        let leftExpression = parsePrimary();
+
+        while (currentToken !== undefined && (currentToken.value === Operator.EXPONENT || currentToken.value === Operator.SCIENTIFIC)) {
+            const operator = currentToken.value;
+            currentToken = tokens[++position];
+            const rightExpression = parseFactor();
+            leftExpression = {
+                type: 'BINARY_OP',
+                operator: operator,
+                left: leftExpression,
+                right: rightExpression
+            };
+        }
+
+        return leftExpression;
+    }
+
+    function parsePrimary(): Expression {
         if (currentToken !== undefined && currentToken.type === 'NUMBER') {
             const value = parseFloat(currentToken.value);
             currentToken = tokens[++position];
@@ -113,18 +124,11 @@ export function parse(tokens: Token[]): Expression {
             };
         }
 
-        if (
-            currentToken !== undefined &&
-            currentToken.type === 'PAREN' &&
-            currentToken.value === '('
-        ) {
+        if (currentToken !== undefined && currentToken.type === 'PAREN' && currentToken.value === PAREN.OPEN) {
             currentToken = tokens[++position];
             const innerExpression = parseExpression();
 
-            if (
-                currentToken === undefined ||
-                (currentToken.type !== 'PAREN' || currentToken.value !== ')')
-            ) {
+            if (currentToken === undefined || (currentToken.type !== 'PAREN' || currentToken.value !== PAREN.CLOSE)) {
                 throw new Error(`Expected closing parenthesis at position ${position}`);
             }
 
@@ -132,13 +136,20 @@ export function parse(tokens: Token[]): Expression {
             return innerExpression;
         }
 
-        throw new Error(`Invalid token: ${currentToken?.value} at position ${position}. Expected a number or parenthesis`);
+        if (currentToken !== undefined) {
+            throw new Error(`Invalid token: ${currentToken?.value} at position ${position}. Expected a number or parenthesis`);
+        }
+
+        throw new Error(
+            `Invalid expression: expected an expression on the right side of ${tokens[position - 1].value
+            } at position ${position - 1}`
+        );
     }
 
     const result = parseExpression();
 
     if (currentToken !== undefined) {
-        throw new Error(`Unexpected token: ${currentToken.value} at position ${position}`);
+        throw new Error(`Unexpected token ${currentToken.value} at position ${position}`);
     }
 
     return result;

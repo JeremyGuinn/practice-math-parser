@@ -56,7 +56,7 @@ describe("Tokenizer", () => {
     });
 
     describe("Operator Tokenization", () => {
-        it.each(['+', '-', '*', '/'])('should tokenize operator %s', (operator) => {
+        it.each(['+', '-', '*', '/', '^'])('should tokenize operator %s', (operator) => {
             const input = operator;
             const expectedTokens: Token[] = [{ type: 'OPERATOR', value: operator }];
             expect(tokenize(input)).toEqual(expectedTokens);
@@ -92,6 +92,31 @@ describe("Tokenizer", () => {
             const input = "((()()((()))))))(";
             const expectedTokens: Token[] = input.split("").map((paren) => ({ type: 'PAREN', value: paren }));
             expect(tokenize(input)).toEqual(expectedTokens);
+        });
+    });
+
+    describe("Function Tokenization", () => {
+        it.each(['log', 'ln', 'exp', 'sqrt', 'abs', 'atan', 'acos', 'asin', 'sinh', 'cosh', 'tanh', 'tan', 'sin', 'cos'])('should tokenize function %s', (func) => {
+            const input = func;
+            const expectedTokens: Token[] = [{ type: 'FUNCTION', value: func }];
+            expect(tokenize(input)).toEqual(expectedTokens);
+        });
+
+        test("should tokenize a single function", () => {
+            const input = "sin";
+            const expectedTokens: Token[] = [{ type: 'FUNCTION', value: "sin" }];
+            expect(tokenize(input)).toEqual(expectedTokens);
+        });
+
+        test("should tokenize multiple functions", () => {
+            const input = "sin cos tan";
+            const expectedTokens: Token[] = input.split(" ").map((func) => ({ type: 'FUNCTION', value: func }));
+            expect(tokenize(input)).toEqual(expectedTokens);
+        });
+
+        test("should throw for an invalid function", () => {
+            const input = "abc";
+            expect(() => tokenize(input)).toThrow("Invalid function: abc at position 3");
         });
     });
 

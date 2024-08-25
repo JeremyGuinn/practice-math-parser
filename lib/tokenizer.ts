@@ -1,15 +1,12 @@
-export type TokenType = 'NUMBER' | 'OPERATOR' | 'PAREN';
-export type Operator = '+' | '-' | '*' | '/';
+import { Operator, MATH_FUNCTIONS } from './tokens';
+import { isDigit, isOperator, isParen, isWhitespace, isAlpha } from './matchers';
+
+export type TokenType = 'NUMBER' | 'OPERATOR' | 'PAREN' | 'FUNCTION';
 
 export type Token = {
     type: TokenType;
     value: string;
 };
-
-const isDigit = (char: string) => /\d/.test(char);
-const isOperator = (char: string) => /[\+\-\*\/]/.test(char);
-const isParen = (char: string) => /[\(\)]/.test(char);
-const isWhitespace = (char: string) => /\s/.test(char);
 
 export function tokenize(input: string): Token[] {
     const tokens: Token[] = [];
@@ -47,9 +44,42 @@ export function tokenize(input: string): Token[] {
             continue;
         }
 
+        if (isAlpha(currentChar)) {
+            let func = '';
+
+            while (currentChar && isAlpha(currentChar)) {
+                func += currentChar;
+                currentChar = input[++position];
+            }
+
+            if (!MATH_FUNCTIONS.includes(func.toLowerCase())) {
+                throw new Error(`Invalid function: ${func} at position ${position}`);
+            }
+
+            tokens.push({ type: 'FUNCTION', value: func.toLowerCase() });
+            continue;
+        }
+
         if (isOperator(currentChar)) {
-            tokens.push({ type: 'OPERATOR', value: currentChar });
-            currentChar = input[++position];
+            let operatorCount = 0;
+
+            if (currentChar === Operator.SUBTRACT) {
+                while (currentChar === Operator.SUBTRACT) {
+                    operatorCount++;
+                    currentChar = input[++position];
+                }
+
+                if (operatorCount % 2 === 0) {
+
+                    tokens.push({ type: 'OPERATOR', value: Operator.ADD });
+                } else {
+                    tokens.push({ type: 'OPERATOR', value: Operator.SUBTRACT });
+                }
+            } else {
+                tokens.push({ type: 'OPERATOR', value: currentChar });
+                currentChar = input[++position];
+            }
+
             continue;
         }
 
